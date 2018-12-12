@@ -151,7 +151,10 @@ function  WhenAddingFiles
         $NoPipeline,
 
         [Switch]
-        $NoBasePath
+        $NoBasePath,
+
+        [string]
+        $AtBasePath
     )
 
     $archivePath = Join-Path -Path $TestDrive.FullName -ChildPath 'zip.zip'
@@ -166,6 +169,11 @@ function  WhenAddingFiles
     if( -not $NoBasePath )
     {
         $params['BasePath'] = $TestDrive.FullName;
+    }
+
+    if( $AtBasePath )
+    {
+        $params['BasePath'] = $AtBasePath
     }
 
     if( $AtArchiveRoot )
@@ -254,4 +262,12 @@ Describe 'Add-ZipArchiveEntry.when passing a directory' {
     GivenFile 'dir1\one.cs','dir1\two.cs'
     WhenAddingFiles (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1') -NoPipeline
     ThenArchiveContains 'dir1\one.cs','dir1\two.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when giving an item a new root name' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs'
+    $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
+    WhenAddingFiles $root -AtBasePath $root -AtArchiveRoot 'dir2' -NoPipeline
+    ThenArchiveContains 'dir2\one.cs','dir2\two.cs'
 }

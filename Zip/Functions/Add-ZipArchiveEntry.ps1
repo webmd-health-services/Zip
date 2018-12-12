@@ -39,6 +39,11 @@ function Add-ZipArchiveEntry
     Get-Item -Path '.\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -BasePath (Get-Location).Path -EntryParentPath 'package'
 
     Demonstrates how to customize the directory in the ZIP file files will be added at. In this case, all the files under the `Zip` directory will be put in a `packages` directory, e.g. `packages\Zip`.
+
+    .EXAMPLE
+    Get-ChildItem 'C:\Projects\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -BasePath 'C:\Projects\Zip' -EntryParentPath 'Zip2'
+
+    Demonstrates how to give a directory a different name when adding it to the zip file. In this case, we're adding all the items in `C:\Projects\Zip`. Because the `BasePath` parameter is also set to `C:\Projects\Zip`, normally all the files/directories in `C:\Projects\Zip` would be in the root of the ZIP file, but because the `EntryParentPath` parameter is set to `Zip2`, all the files/directories will be put in a `Zip2` directory.
     #>
     [CmdletBinding()]
     param(
