@@ -4,6 +4,8 @@ PublishOn:
 Build:
 - Version:
     Path: Zip\Zip.psd1
+- GetPowerShellModule:
+    Name: Glob
 - Pester4:
     Path: Tests\*.Tests.ps1
 
