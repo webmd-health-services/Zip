@@ -135,7 +135,7 @@ function ThenError
     }
 }
 
-function  WhenAddingFiles
+function WhenAddingFiles
 {
     [CmdletBinding()]
     param(
@@ -147,14 +147,9 @@ function  WhenAddingFiles
 
         $AtArchiveRoot,
 
-        [Switch]
-        $NoPipeline,
+        $WithBasePath,
 
-        [Switch]
-        $NoBasePath,
-
-        [string]
-        $AtBasePath
+        $WithName
     )
 
     $archivePath = Join-Path -Path $TestDrive.FullName -ChildPath 'zip.zip'
@@ -166,15 +161,6 @@ function  WhenAddingFiles
     $params = @{
                     ZipArchivePath = $archive.FullName;
                 }
-    if( -not $NoBasePath )
-    {
-        $params['BasePath'] = $TestDrive.FullName;
-    }
-
-    if( $AtBasePath )
-    {
-        $params['BasePath'] = $AtBasePath
-    }
 
     if( $AtArchiveRoot )
     {
@@ -186,26 +172,23 @@ function  WhenAddingFiles
         $params['Force'] = $true
     }
 
+    if( $WithBasePath )
+    {
+        $params['BasePath'] = $WithBasePath
+    }
+
+    if( $WithName )
+    {
+        $params['EntryName'] = $WithName
+    }
+
     $Global:Error.Clear()
-    if( $NoPipeline )
-    {
-        Push-Location -Path $TestDrive.FullName
-        try
-        {
-            foreach( $item in $Path )
-            {
-                Add-ZipArchiveEntry @params -InputObject $item
-            }
-        }
-        finally
-        {
-            Pop-Location
-        }
-    }
-    else
-    {
-        Find-GlobFile -Path $TestDrive.FullName -Include $Path | Add-ZipArchiveEntry @params
-    }
+    
+
+    $Path | 
+        ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
+        Get-Item |
+        Add-ZipArchiveEntry @params
 }
 
 Describe 'Add-ZipArchiveEntry' {
@@ -245,29 +228,52 @@ Describe 'Add-ZipArchiveEntry.when adding archive root' {
 Describe 'Add-ZipArchiveEntry.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs' -NoPipeline
+    WhenAddingFiles '*.cs'
     ThenArchiveContains 'one.cs','two.cs'
 }
 
-Describe 'Add-ZipArchiveEntry.when no base path' {
+Describe 'Add-ZipArchiveEntry.when changing name' {
     Init
-    GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs' -NoBasePath
-    $rootPath = $TestDrive.FullName -replace '^[^:]:\\',''
-    ThenArchiveContains ('one.cs','two.cs' | ForEach-Object { '{0}\{1}' -f $rootPath,$_ })
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -WithName 'cs.one'
+    ThenArchiveContains 'cs.one'
+    ThenArchiveNotContains 'one.cs'
 }
 
 Describe 'Add-ZipArchiveEntry.when passing a directory' {
     Init
-    GivenFile 'dir1\one.cs','dir1\two.cs'
-    WhenAddingFiles (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1') -NoPipeline
-    ThenArchiveContains 'dir1\one.cs','dir1\two.cs'
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1'
+    ThenArchiveContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
 }
 
-Describe 'Add-ZipArchiveEntry.when giving an item a new root name' {
+Describe 'Add-ZipArchiveEntry.when customizing a directory name' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1' -WithName '1dir'
+    ThenArchiveContains '1dir\one.cs','1dir\two.cs','1dir\three\four.cs'
+    ThenArchiveNotContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when passing a directory with a custom base path' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1'
+    ThenArchiveContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when giving a directory a new root name' {
+    Init
+    GivenFile 'dir1\another\one.cs','dir1\another\two.cs'
+    $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
+    WhenAddingFiles 'dir1\another\one.cs','dir1\another\two.cs' -AtArchiveRoot 'dir2' -WithBasePath $root
+    ThenArchiveContains 'dir2\another\one.cs','dir2\another\two.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when giving a direcotry a new root name' {
     Init
     GivenFile 'dir1\one.cs','dir1\two.cs'
     $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
-    WhenAddingFiles $root -AtBasePath $root -AtArchiveRoot 'dir2' -NoPipeline
+    WhenAddingFiles 'dir1\*.cs' -AtArchiveRoot 'dir2'
     ThenArchiveContains 'dir2\one.cs','dir2\two.cs'
 }
