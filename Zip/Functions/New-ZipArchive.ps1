@@ -58,8 +58,14 @@ function New-ZipArchive
     }
     $Path = [IO.Path]::GetFullPath($Path)
 
-    if( (Test-Path -Path $Path -PathType Leaf) )
+    if( (Test-Path -Path $Path) )
     {
+        if( (Test-Path -Path $Path -PathType Container) )
+        {
+            Write-Error -Message ('Path "{0}" is a directory. Unable to create a ZIP archive there.' -f $Path)
+            return
+        }
+
         if( $Force )
         {
             Remove-Item -Path $Path

@@ -130,3 +130,11 @@ Describe 'New-ZipArchive.when file exists and forcing creation' {
     WhenCreatingArchive 'somefile.zip' -Force
     ThenArchiveCreated 'somefile.zip'
 }
+
+Describe 'New-ZipArchive.when destination exists but it''s a directory' {
+    Init
+    GivenFile 'dir1.zip/somefile.zip'
+    WhenCreatingArchive 'dir1.zip' -Force -ErrorAction SilentlyContinue
+    ThenNothingReturned
+    ThenError -Matches 'is\ a\ directory'
+}
