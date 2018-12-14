@@ -263,7 +263,7 @@ Describe 'Add-ZipArchiveEntry.when passing a directory with a custom base path' 
     ThenArchiveContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
 }
 
-Describe 'Add-ZipArchiveEntry.when giving a directory a new root name' {
+Describe 'Add-ZipArchiveEntry.when piping filtered list of files' {
     Init
     GivenFile 'dir1\another\one.cs','dir1\another\two.cs'
     $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
@@ -277,4 +277,11 @@ Describe 'Add-ZipArchiveEntry.when giving a direcotry a new root name' {
     $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
     WhenAddingFiles 'dir1\*.cs' -AtArchiveRoot 'dir2'
     ThenArchiveContains 'dir2\one.cs','dir2\two.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when base path doesn''t match files' {
+    Init
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -WithBasePath 'C:\Windows\System32' -ErrorAction SilentlyContinue
+    ThenError -Matches 'is\ not\ in'
 }

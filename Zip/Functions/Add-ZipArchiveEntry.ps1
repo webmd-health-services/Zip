@@ -162,6 +162,11 @@ function Add-ZipArchiveEntry
             if( $BasePath )
             {
                 $baseEntryName = $filePath -replace $basePathRegex,''
+                if( $baseEntryName -eq $filePath )
+                {
+                    Write-Error -Message ('Path "{0}" is not in base path "{1}". When using the BasePath parameter, all items passed in must be under that path.' -f $filePath,$BasePath)
+                    continue
+                }
             }
             else
             {
