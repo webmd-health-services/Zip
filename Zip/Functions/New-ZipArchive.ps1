@@ -58,7 +58,7 @@ function New-ZipArchive
     }
     $Path = [IO.Path]::GetFullPath($Path)
 
-    if( (Test-Path -Path $Path) )
+    if( (Test-Path -Path $Path -PathType Leaf) )
     {
         if( $Force )
         {
