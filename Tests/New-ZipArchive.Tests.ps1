@@ -106,27 +106,27 @@ function WhenCreatingArchive
 
 Describe 'New-ZipArchive.when passing absolute path' {
     Init
-    WhenCreatingArchive 'somefile.someext'
-    ThenArchiveCreated 'somefile.someext'
+    WhenCreatingArchive 'somefile.zip'
+    ThenArchiveCreated 'somefile.zip'
 }
 
 Describe 'New-ZipArchive.when passing relative path' {
     Init
-    WhenCreatingArchive 'somefile.someext' -WithRelativePath
-    ThenArchiveCreated 'somefile.someext'
+    WhenCreatingArchive 'somefile.zip' -WithRelativePath
+    ThenArchiveCreated 'somefile.zip'
 }
 
 Describe 'New-ZipArchive.when file exists' {
     Init
-    GivenFile 'somefile.someext'
-    WhenCreatingArchive 'somefile.someext' -ErrorAction SilentlyContinue
+    GivenFile 'somefile.zip'
+    WhenCreatingArchive 'somefile.zip' -ErrorAction SilentlyContinue
     ThenNothingReturned
     ThenError -Matches 'already exists'
 }
 
 Describe 'New-ZipArchive.when file exists and forcing creation' {
     Init
-    GivenFile 'somefile.someext'
-    WhenCreatingArchive 'somefile.someext' -Force
-    ThenArchiveCreated 'somefile.someext'
+    GivenFile 'somefile.zip'
+    WhenCreatingArchive 'somefile.zip' -Force
+    ThenArchiveCreated 'somefile.zip'
 }
