@@ -206,6 +206,7 @@ Describe 'Add-ZipArchiveEntry.when file already exists' {
     GivenFile 'one.cs' 'second'
     WhenAddingFiles '*.cs' -ErrorAction SilentlyContinue
     ThenArchiveContains 'one.cs' 'first'
+    ThenError -Matches 'archive\ already\ has'
 }
 
 Describe 'Add-ZipArchiveEntry.when file already exists and forcing overwrite' {
