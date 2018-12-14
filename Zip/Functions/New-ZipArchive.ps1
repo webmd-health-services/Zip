@@ -71,7 +71,7 @@ function New-ZipArchive
         }
     }
 
-    $tempDir = Join-Path -Path $env:TEMP -ChildPath ('{0}.{1}' -f ($Path | Split-Path -Leaf),([IO.Path]::GetRandomFileName()))
+    $tempDir = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath ('{0}.{1}' -f ($Path | Split-Path -Leaf),([IO.Path]::GetRandomFileName()))
     New-Item -Path $tempDir -ItemType 'Directory' | Out-Null
     try
     {
