@@ -1,0 +1,37 @@
+PublishOn:
+ - master
+ 
+Build:
+- Version:
+    Path: Zip\Zip.psd1
+- GetPowerShellModule:
+    Name: Glob
+- Pester4:
+    Path: Tests\*.Tests.ps1
+- Exec: .whiskey\bin\7-Zip\7z.exe a $(WHISKEY_OUTPUT_DIRECTORY)\Zip.zip .\Zip
+
+Publish:
+- PublishPowerShellModule:
+    RepositoryName: PSGallery
+    RepositoryUri: https://powershellgallery.com/api/v2/
+    Path: Zip
+    ApiKeyID: PowerShellGallery
+
+- SetVariableFromPowerShellDataFile:
+    Path: Zip\Zip.psd1
+    Variables:
+        PrivateData:
+            PSData:
+                ReleaseNotes: RELEASE_NOTES
+
+- GitHubRelease:
+    RepositoryName: webmd-health-services/Zip
+    ApiKeyID: github.com
+    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
+    Commitish: $(WHISKEY_SCM_COMMIT_ID)
+    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
+    Description: $(RELEASE_NOTES)
+    Assets:
+    - Path: .output\Zip.zip
+      ContentType: application/zip
+      Name: Zip-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip
