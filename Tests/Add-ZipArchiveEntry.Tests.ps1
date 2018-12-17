@@ -183,7 +183,6 @@ function WhenAddingFiles
     }
 
     $Global:Error.Clear()
-    
 
     $Path | 
         ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
@@ -285,3 +284,11 @@ Describe 'Add-ZipArchiveEntry.when base path doesn''t match files' {
     WhenAddingFiles 'one.cs' -WithBasePath 'C:\Windows\System32' -ErrorAction SilentlyContinue
     ThenError -Matches 'is\ not\ in'
 }
+
+Describe 'Add-ZipArchiveEntry.when base path has a directory separator at the end' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1' -WithBasePath (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1\')
+    ThenArchiveContains 'one.cs','two.cs','three\four.cs'
+}
+
