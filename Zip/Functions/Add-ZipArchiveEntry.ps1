@@ -74,6 +74,7 @@ function Add-ZipArchiveEntry
 
         [ValidatePattern('^[^\\/]')]
         [string]
+        # A parent path to add to each file in the ZIP archive. If you pass 'package' to this parameter, and you're adding an item named 'file.txt', the file will be added to the archive as `package\file.txt`.
         $EntryParentPath,
 
         [IO.Compression.CompressionLevel]
