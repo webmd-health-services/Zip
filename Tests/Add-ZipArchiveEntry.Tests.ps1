@@ -13,7 +13,10 @@ function GivenFile
         [string[]]
         $Path,
 
-        $Content
+        $Content,
+
+        [datetime]
+        $LastModified
     )
 
     foreach( $pathItem in $Path )
@@ -35,6 +38,11 @@ function GivenFile
         {
             [IO.File]::WriteAllText($fullPath,$Content)
         }
+
+        if( $LastModified )
+        {
+            (Get-Item -Path $fullPath).LastWriteTime = $LastModified
+        }
     }
 }
 
@@ -49,7 +57,10 @@ function ThenArchiveContains
         [string[]]
         $EntryName,
 
-        $ExpectedContent
+        $ExpectedContent,
+
+        [DateTime]
+        $LastModified
     )
 
     [IO.Compression.ZipArchive]$file = [IO.Compression.ZipFile]::OpenRead($archive.FullName)
@@ -76,6 +87,12 @@ function ThenArchiveContains
                     {
                         $reader.Close()
                     }
+                }
+                if( $LastModified )
+                {
+                    # Zip files have two-second granularity times
+                    $entry.LastWriteTime | Should -BeGreaterThan $LastModified.AddSeconds(-2)
+                    $entry.LastWriteTime | Should -BeLessThan $LastModified.AddSeconds(2)
                 }
             }
         }
@@ -192,9 +209,10 @@ function WhenAddingFiles
 
 Describe 'Add-ZipArchiveEntry' {
     Init
-    GivenFile 'one.cs','one.aspx','one.js','one.txt'
+    $lastModified = (Get-Date).AddDays(-1)
+    GivenFile 'one.cs','one.aspx','one.js','one.txt' -LastModified $lastModified
     WhenAddingFiles '*.aspx','*.js'
-    ThenArchiveContains 'one.aspx','one.js'
+    ThenArchiveContains 'one.aspx','one.js' -LastModified $lastModified
     ThenArchiveNotContains 'one.cs','one.txt'
 }
 
@@ -297,4 +315,3 @@ Describe 'Add-ZipArchiveEntry.when base path has a directory separator at the en
     WhenAddingFiles 'dir1' -WithBasePath (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1\')
     ThenArchiveContains 'one.cs','two.cs','three\four.cs'
 }
-
