@@ -161,12 +161,19 @@ function Add-ZipArchiveEntry
 
     end
     {
+        $bufferSize = 4kb
+        [byte[]]$buffer = New-Object 'byte[]' ($bufferSize)
+        $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
+        Write-Progress -Activity $activity 
         [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
         try
         {
+            $processedCount = 1
             foreach( $entryName in $entries.Keys )
             {
                 $filePath = $entries[$entryName]
+                Write-Progress -Activity $activity -Status $filePath -CurrentOperation $entryName -PercentComplete (($processedCount++/$entries.Count) * 100)
+                Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
                 $entry = $zipFile.GetEntry($EntryName)
                 if( $entry )
                 {
@@ -181,16 +188,32 @@ function Add-ZipArchiveEntry
                     }
                 }
 
-                Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
                 $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
                 $stream = $entry.Open()
                 try
                 {
-                    $writer = New-Object 'IO.StreamWriter' ($stream)
+                    $writer = New-Object 'IO.BinaryWriter' ($stream)
                     try
                     {
-                        [byte[]]$bytes = [IO.File]::ReadAllBytes($FilePath)
-                        $writer.Write($bytes,0,$bytes.Count)
+                        [Array]::Clear($buffer,0,$bufferSize)
+                        $fileReader = New-Object 'IO.FileStream' ($filePath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read,$bufferSize,[IO.FileOptions]::SequentialScan)
+                        try
+                        {
+                            while( $true )
+                            {
+                                [int]$bytesRead = $fileReader.Read($buffer, 0, $bufferSize)
+                                if( -not $bytesRead )
+                                {
+                                    break
+                                }
+                                $writer.Write($buffer,0,$bytesRead)
+                            }
+                        }
+                        finally
+                        {
+                            $fileReader.Close()
+                            $fileREader.Dispose()
+                        }
                     }
                     finally
                     {
@@ -207,7 +230,9 @@ function Add-ZipArchiveEntry
         }
         finally
         {
+            Write-Progress -Activity $activity -Status 'Writing File' -PercentComplete 99
             $zipFile.Dispose()
+            Write-Progress -Activity $activity -Completed
         }
     }
 }
