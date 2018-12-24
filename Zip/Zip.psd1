@@ -12,7 +12,7 @@
     RootModule = 'Zip.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.0.0'
+    ModuleVersion = '0.1.0'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -111,8 +111,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = '
-* Created `New-ZipArchive` function for creating new archives.
-* Created `Add-ZipArchiveEntry` funcgtion for adding files to an existing ZIP archive.
+* Optimized `Add-ZipArchiveEntry` to compress files more than an order of magnitude faster. In our testing, compressing a 190MB folder of 538 files/assemblies went from 2 minutes to 14 seconds.
 '
 
         } # End of PSData hashtable
