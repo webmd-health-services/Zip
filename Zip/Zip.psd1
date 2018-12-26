@@ -12,10 +12,10 @@
     RootModule = 'Zip.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.1.0'
+    ModuleVersion = '0.2.0'
 
     # Supported PSEditions
-    # CompatiblePSEditions = @()
+    CompatiblePSEditions = @( 'Desktop', 'Core' )
 
     # ID used to uniquely identify this module
     GUID = '707c599e-c7e0-4913-a4a4-6820e37f10e9'
@@ -111,7 +111,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = '
-* Optimized `Add-ZipArchiveEntry` to compress files more than an order of magnitude faster. In our testing, compressing a 190MB folder of 538 files/assemblies went from 2 minutes to 14 seconds.
+* `Add-ZipArchiveEntry` now preserves a file''s last write/modified date/time.
 '
 
         } # End of PSData hashtable
