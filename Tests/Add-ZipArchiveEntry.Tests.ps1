@@ -73,7 +73,7 @@ function ThenArchiveContains
         It ('should add files to ZIP') {
             foreach( $entryNameItem in $EntryName )
             {
-                [IO.Compression.ZipArchiveEntry]$entry = $file.GetEntry($entryNameItem) 
+                [IO.Compression.ZipArchiveEntry]$entry = $file.GetEntry($entryNameItem)
                 $entry | Should -Not -BeNullOrEmpty
                 if( $ExpectedContent )
                 {
@@ -115,7 +115,7 @@ function ThenArchiveEmpty
     finally
     {
         $file.Dispose()
-    }    
+    }
 }
 
 function ThenArchiveNotContains
@@ -156,8 +156,11 @@ function WhenAddingFiles
 {
     [CmdletBinding()]
     param(
-        [string[]]
+        [object[]]
         $Path,
+
+        [switch]
+        $AsPathString,
 
         [Switch]
         $Force,
@@ -201,10 +204,14 @@ function WhenAddingFiles
 
     $Global:Error.Clear()
 
-    $Path | 
-        ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
-        Get-Item |
-        Add-ZipArchiveEntry @params
+    $Path = $Path | ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ }
+
+    if (-not $AsPathString)
+    {
+        $Path = $Path | Get-Item
+    }
+
+    $Path | Add-ZipArchiveEntry @params
 }
 
 Describe 'Add-ZipArchiveEntry' {
@@ -246,7 +253,7 @@ Describe 'Add-ZipArchiveEntry.when adding archive root' {
 Describe 'Add-ZipArchiveEntry.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs'
+    WhenAddingFiles 'one.cs', 'two.cs' -AsPathString
     ThenArchiveContains 'one.cs','two.cs'
 }
 
