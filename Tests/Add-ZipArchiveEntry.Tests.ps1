@@ -156,11 +156,14 @@ function WhenAddingFiles
 {
     [CmdletBinding()]
     param(
-        [object[]]
+        [string[]]
         $Path,
 
         [switch]
         $AsPathString,
+
+        [switch]
+        $NonPipeline,
 
         [Switch]
         $Force,
@@ -204,14 +207,21 @@ function WhenAddingFiles
 
     $Global:Error.Clear()
 
-    $Path = $Path | ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ }
+    $pathsToZip = $Path | ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ }
 
-    if (-not $AsPathString)
+    if( -not $AsPathString )
     {
-        $Path = $Path | Get-Item
+        $pathsToZip = $pathsToZip | Get-Item
     }
 
-    $Path | Add-ZipArchiveEntry @params
+    if( $NonPipeline )
+    {
+        Add-ZipArchiveEntry -InputObject $pathsToZip @params
+    }
+    else
+    {
+        $pathsToZip | Add-ZipArchiveEntry @params
+    }
 }
 
 Describe 'Add-ZipArchiveEntry' {
@@ -221,6 +231,13 @@ Describe 'Add-ZipArchiveEntry' {
     WhenAddingFiles '*.aspx','*.js'
     ThenArchiveContains 'one.aspx','one.js' -LastModified $lastModified
     ThenArchiveNotContains 'one.cs','one.txt'
+}
+
+Describe 'Add-ZipArchiveEntry.when passing files directly to InputObject parameter' {
+    Init
+    GivenFile 'one.cs', 'two.cs'
+    WhenAddingFiles 'one.cs', 'two.cs' -NonPipeline
+    ThenArchiveContains 'one.cs', 'two.cs'
 }
 
 Describe 'Add-ZipArchiveEntry.when file already exists' {

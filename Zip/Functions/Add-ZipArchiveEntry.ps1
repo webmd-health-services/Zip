@@ -54,7 +54,7 @@ function Add-ZipArchiveEntry
         [Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName)]
         [Alias('FullName')]
         [Alias('Path')]
-        [string]
+        [string[]]
         # The files/directories to add to the archive. Normally, you would pipe file/directory objects to `Add-ZipArchiveEntry`. You may also pass any object that has a `FullName` or `Path property. You may also pass the path as a string.
         #
         # If you pass a directory object or path to a directory, all files in that directory and all its sub-directories will be added to the archive.

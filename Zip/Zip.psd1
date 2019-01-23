@@ -111,7 +111,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = '
-* `Add-ZipArchiveEntry` now preserves a file''s last write/modified date/time.
+* Fixed: `Add-ZipArchiveEntry` fails when passed multiple passed directly, in a non-pipeline manner.
 '
 
         } # End of PSData hashtable
