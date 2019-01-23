@@ -112,6 +112,8 @@
             # ReleaseNotes of this module
             ReleaseNotes = '
 * Fixed: `Add-ZipArchiveEntry` fails when passed multiple passed directly, in a non-pipeline manner.
+* `Add-ZipArchiveEntry` no longer supports resolving wildcard expressions in paths.
+* Fixed: `New-ZipArchive` fails if archive name contains `[]` characters.
 '
 
         } # End of PSData hashtable

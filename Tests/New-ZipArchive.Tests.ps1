@@ -42,14 +42,14 @@ function ThenArchiveCreated
     )
 
     It ('should return FileInfo object for archive') {
-        $result | Should -Exist
+        Test-Path -LiteralPath $result.FullName -PathType Leaf | Should -BeTrue
         $result | Should -BeOfType ([IO.FileInfo])
         $result.FullName | Should -Be (Join-Path -Path $TestDrive.FullName -ChildPath $ExpectedPath)
     }
 
     $zipExpandPath = Join-Path -Path $TestDrive.FullName -ChildPath ('zip.{0}' -f [IO.Path]::GetRandomFileName())
     It ('should create an empty ZIP file') {
-        { Expand-Archive -Path $result.FullName -DestinationPath $zipExpandPath } | Should -Not -Throw
+        { Expand-Archive -LiteralPath $result.FullName -DestinationPath $zipExpandPath } | Should -Not -Throw
     }
 }
 
@@ -62,7 +62,6 @@ function ThenError
     It ('should write an error') {
         $Global:Error | Should -Match $Matches
     }
-        
 }
 
 function ThenNothingReturned
@@ -94,6 +93,10 @@ function WhenCreatingArchive
     {
         $Global:Error.Clear()
         $script:result = New-ZipArchive -Path $path -Force:$Force
+    }
+    catch
+    {
+        Write-Error -ErrorRecord $_
     }
     finally
     {
@@ -137,4 +140,17 @@ Describe 'New-ZipArchive.when destination exists but it''s a directory' {
     WhenCreatingArchive 'dir1.zip' -Force -ErrorAction SilentlyContinue
     ThenNothingReturned
     ThenError -Matches 'is\ a\ directory'
+}
+
+Describe 'New-ZipArchive.when passing path with valid special characters in path' {
+    Init
+    WhenCreatingArchive 'somefile[1].zip'
+    ThenArchiveCreated 'somefile[1].zip'
+}
+
+Describe 'New-ZipArchive.when passing path with invalid special characters in path' {
+    Init
+    WhenCreatingArchive 'somefile*.zip' -ErrorAction SilentlyContinue
+    ThenNothingReturned
+    ThenError -Matches 'Illegal characters in path'
 }

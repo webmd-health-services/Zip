@@ -339,3 +339,20 @@ Describe 'Add-ZipArchiveEntry.when base path has a directory separator at the en
     WhenAddingFiles 'dir1' -WithBasePath (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1\')
     ThenArchiveContains 'one.cs','two.cs','three\four.cs'
 }
+
+Describe 'Add-ZipArchiveEntry.when passed path string with wildcard' {
+    Init
+    GivenFile 'one.cs', 'two.cs'
+    WhenAddingFiles '*.cs', 'one.cs' -AsPathString -ErrorAction SilentlyContinue
+    ThenArchiveContains 'one.cs'
+    ThenArchiveNotContains 'two.cs'
+    ThenError -Matches 'does\ not\ exist\.\ Wildcard\ expressions\ are\ not\ supported\.'
+}
+
+Describe 'Add-ZipArchiveEntry.when character set wildcard matches a filename literally' {
+    Init
+    GivenFile '[one].cs', 'o.cs', 'n.cs', 'e.cs', 'two.cs'
+    WhenAddingFiles '[one].cs', 'two.cs' -AsPathString
+    ThenArchiveContains '[one].cs', 'two.cs'
+    ThenArchiveNotContains 'o.cs', 'n.cs', 'e.cs'
+}

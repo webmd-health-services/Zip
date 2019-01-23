@@ -6,10 +6,10 @@ function Add-ZipArchiveEntry
     Adds files and directories to a ZIP archive.
 
     .DESCRIPTION
-    The `Add-ZipArchiveEntry` function adds files and directories to a ZIP archive. The archive must exist. Use the `New-ZipArchive` function to create a new ZIP file. Pipe file or directory objects that you want to add to the pipeline. You may also pass paths directly to the `InputObject` parameter. Relative paths are resolved from the current directory. If you pass a directory or path to a directory, the entire directory and all its sub-directories/files are added to the archive.
-    
+    The `Add-ZipArchiveEntry` function adds files and directories to a ZIP archive. The archive must exist. Use the `New-ZipArchive` function to create a new ZIP file. Pipe file or directory objects that you want to add to the pipeline. You may also pass paths directly to the `InputObject` parameter (wildcards are **NOT** supported). Relative paths are resolved from the current directory. If you pass a directory or path to a directory, the entire directory and all its sub-directories/files are added to the archive.
+
     Files are added to the ZIP archive using their names. They are always added to the root of the archive. For example, if you added `C:\Projects\Zip\Zip\Zip.psd1` to an archive, it would get added at `Zip.psd1`.
-    
+
     Directories are added into a directory in the root of the archive with the source directory's name. For example, if you add 'C:\Projects\Zip', all items will be added to the ZIP archive at `Zip`.
 
     You can change the name an item will have in the archive with the `EntryName` parameter. Path separators are allowed, so you can put any item into any directory.
@@ -110,7 +110,24 @@ function Add-ZipArchiveEntry
 
     process
     {
-        $filePaths = $InputObject | Resolve-Path | Select-Object -ExpandProperty 'ProviderPath'
+        $filePaths =
+            $InputObject |
+            ForEach-Object {
+                $path = Resolve-Path -LiteralPath $_ -ErrorAction Ignore
+                if( -not $path )
+                {
+                    $errorSuffix = ''
+                    if( $_ -match '\*|\?|\[.*\]' )
+                    {
+                        $errorSuffix = ' Wildcard expressions are not supported.'
+                    }
+
+                    Write-Error -Message ('Cannot find path "{0}" because it does not exist.{1}' -f $_, $errorSuffix) -ErrorAction $ErrorActionPreference
+                    return
+                }
+                $path | Select-Object -ExpandProperty 'ProviderPath'
+            }
+
         foreach( $filePath in $filePaths )
         {
             if( $BasePath )
@@ -139,7 +156,7 @@ function Add-ZipArchiveEntry
             }
 
             # Add the file.
-            if( (Test-Path -Path $filePath -PathType Leaf) )
+            if( (Test-Path -LiteralPath $filePath -PathType Leaf) )
             {
                 $entries[$baseEntryName] = $filePath
                 continue
@@ -147,7 +164,7 @@ function Add-ZipArchiveEntry
 
             # Now, handle directories
             $dirEntryBasePathRegex = '^{0}{1}' -f [regex]::Escape($filePath),$directorySeparatorsRegex
-            foreach( $filePath in (Get-ChildItem -Path $filePath -Recurse -File | Select-Object -ExpandProperty 'FullName') )
+            foreach( $filePath in (Get-ChildItem -LiteralPath $filePath -Recurse -File | Select-Object -ExpandProperty 'FullName') )
             {
                 $fileEntryName = $filePath -replace $dirEntryBasePathRegex,''
                 if( $baseEntryName )
@@ -164,7 +181,7 @@ function Add-ZipArchiveEntry
         $bufferSize = 4kb
         [byte[]]$buffer = New-Object 'byte[]' ($bufferSize)
         $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
-        Write-Progress -Activity $activity 
+        Write-Progress -Activity $activity
         [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
         try
         {
@@ -189,7 +206,7 @@ function Add-ZipArchiveEntry
                 }
 
                 $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
-                $entry.LastWriteTime = (Get-Item -Path $filePath).LastWriteTime
+                $entry.LastWriteTime = (Get-Item -LiteralPath $filePath).LastWriteTime
                 $stream = $entry.Open()
                 try
                 {
