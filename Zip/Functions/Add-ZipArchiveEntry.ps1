@@ -233,7 +233,7 @@ function Add-ZipArchiveEntry
                     }
                     else
                     {
-                        Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}". To overwrite existing entries, use the -Force switch.' -f $FilePath,$ZipArchivePath,$EntryName)
+                        Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}".' -f $FilePath,$ZipArchivePath,$EntryName)
                         continue
                     }
                 }

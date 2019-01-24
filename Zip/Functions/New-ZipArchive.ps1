@@ -72,7 +72,7 @@ function New-ZipArchive
         }
         else
         {
-            Write-Error -Message ('The file "{0}" already exists. Unable to create a new ZIP archive at that path. Use the -Force switch to overwrite the file.' -f $Path)
+            Write-Error -Message ('The file "{0}" already exists. Unable to create a new ZIP archive at that path.' -f $Path)
             return
         }
     }
