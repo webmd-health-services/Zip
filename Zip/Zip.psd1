@@ -111,7 +111,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = '
-* Fixed: `Add-ZipArchiveEntry` fails when passed multiple passed directly, in a non-pipeline manner.
+* Fixed: `Add-ZipArchiveEntry` fails when passed multiple paths directly, in a non-pipeline manner.
 * `Add-ZipArchiveEntry` no longer supports resolving wildcard expressions in paths.
 * Fixed: `New-ZipArchive` fails if archive name contains `[]` characters.
 * Improved the performance of `Add-ZipArchiveEntry` when zipping a large number of files by reducing the number of progress messages that are written during the operation. Progress messages are now only written every 100ms as opposed for every file added to the ZIP archive.
