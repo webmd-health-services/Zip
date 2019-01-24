@@ -172,7 +172,10 @@ function WhenAddingFiles
 
         $WithBasePath,
 
-        $WithName
+        $WithName,
+
+        [switch]
+        $Quiet
     )
 
     $archivePath = Join-Path -Path $TestDrive.FullName -ChildPath 'zip.zip'
@@ -182,8 +185,9 @@ function WhenAddingFiles
     }
 
     $params = @{
-                    ZipArchivePath = $archive.FullName;
-                }
+        ZipArchivePath = $archive.FullName
+        Quiet = $Quiet
+    }
 
     if( $AtArchiveRoot )
     {
@@ -355,4 +359,15 @@ Describe 'Add-ZipArchiveEntry.when character set wildcard matches a filename lit
     WhenAddingFiles '[one].cs', 'two.cs' -AsPathString
     ThenArchiveContains '[one].cs', 'two.cs'
     ThenArchiveNotContains 'o.cs', 'n.cs', 'e.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when using Quiet switch' {
+    Init
+    Mock -CommandName 'Write-Progress' -ModuleName 'Zip'
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -Quiet
+
+    It 'should not write any progress messages' {
+        Assert-MockCalled -CommandName 'Write-Progress' -ModuleName 'Zip' -Times 0
+    }
 }

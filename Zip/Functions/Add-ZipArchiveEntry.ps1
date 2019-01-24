@@ -87,7 +87,11 @@ function Add-ZipArchiveEntry
 
         [Switch]
         # By default, if a file already exists in the ZIP file, you'll get an error. Use this switch to replace any existing entries.
-        $Force
+        $Force,
+
+        [switch]
+        # Suppress progress messages while adding files to the ZIP archive.
+        $Quiet
     )
 
     begin
@@ -178,18 +182,47 @@ function Add-ZipArchiveEntry
 
     end
     {
+        $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
+        $writeProgress = [Environment]::UserInteractive -and -not $Quiet
+        if( $writeProgress )
+        {
+            Write-Progress -Activity $activity
+        }
+
         $bufferSize = 4kb
         [byte[]]$buffer = New-Object 'byte[]' ($bufferSize)
-        $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
-        Write-Progress -Activity $activity
         [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
+
+        $timer = New-Object 'Timers.Timer' 100
+        $timer |
+            Add-Member -Name 'ProcessedCount' -Value 0 -MemberType NoteProperty -PassThru |
+            Add-Member -MemberType NoteProperty -Name 'Activity' -Value $activity -PassThru |
+            Add-Member -MemberType NoteProperty -Name 'FilePath' -Value '' -PassThru|
+            Add-Member -MemberType NoteProperty -Name 'EntryName' -Value '' -PassThru |
+            Add-Member -MemberType NoteProperty -Name 'TotalCount' -Value $entries.Count
+
+        if( $writeProgress )
+        {
+            # Write-Progress is *expensive*. Only do it if the user is interactive and only every 1/10th of a second.
+            Register-ObjectEvent -InputObject $timer -EventName 'Elapsed' -Action {
+                param(
+                    $Timer,
+                    $EventArgs
+                )
+                Write-Progress -Activity $Timer.Activity -Status $Timer.FilePath -CurrentOperation $Timer.EntryName -PercentComplete (($Timer.ProcessedCount/$Timer.TotalCount) * 100)
+            } | Out-Null
+            $timer.Enabled = $true
+            $timer.Start()
+        }
+
         try
         {
-            $processedCount = 1
             foreach( $entryName in $entries.Keys )
             {
-                $filePath = $entries[$entryName]
-                Write-Progress -Activity $activity -Status $filePath -CurrentOperation $entryName -PercentComplete (($processedCount++/$entries.Count) * 100)
+                $timer.FilePath = $filePath = $entries[$entryName]
+                $timer.ProcessedCount += 1
+                $timer.EntryName = $entryName
+
                 Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
                 $entry = $zipFile.GetEntry($EntryName)
                 if( $entry )
@@ -248,9 +281,14 @@ function Add-ZipArchiveEntry
         }
         finally
         {
-            Write-Progress -Activity $activity -Status 'Writing File' -PercentComplete 99
+            $timer.Stop()
+            $timer.Dispose()
             $zipFile.Dispose()
-            Write-Progress -Activity $activity -Completed
+            if( $writeProgress )
+            {
+                Write-Progress -Activity $activity -Status 'Writing File' -PercentComplete 99
+                Write-Progress -Activity $activity -Completed
+            }
         }
     }
 }
