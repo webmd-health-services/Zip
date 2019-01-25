@@ -73,7 +73,7 @@ function ThenArchiveContains
         It ('should add files to ZIP') {
             foreach( $entryNameItem in $EntryName )
             {
-                [IO.Compression.ZipArchiveEntry]$entry = $file.GetEntry($entryNameItem) 
+                [IO.Compression.ZipArchiveEntry]$entry = $file.GetEntry($entryNameItem)
                 $entry | Should -Not -BeNullOrEmpty
                 if( $ExpectedContent )
                 {
@@ -115,7 +115,7 @@ function ThenArchiveEmpty
     finally
     {
         $file.Dispose()
-    }    
+    }
 }
 
 function ThenArchiveNotContains
@@ -159,6 +159,12 @@ function WhenAddingFiles
         [string[]]
         $Path,
 
+        [switch]
+        $AsPathString,
+
+        [switch]
+        $NonPipeline,
+
         [Switch]
         $Force,
 
@@ -166,7 +172,10 @@ function WhenAddingFiles
 
         $WithBasePath,
 
-        $WithName
+        $WithName,
+
+        [switch]
+        $Quiet
     )
 
     $archivePath = Join-Path -Path $TestDrive.FullName -ChildPath 'zip.zip'
@@ -176,8 +185,9 @@ function WhenAddingFiles
     }
 
     $params = @{
-                    ZipArchivePath = $archive.FullName;
-                }
+        ZipArchivePath = $archive.FullName
+        Quiet = $Quiet
+    }
 
     if( $AtArchiveRoot )
     {
@@ -201,10 +211,21 @@ function WhenAddingFiles
 
     $Global:Error.Clear()
 
-    $Path | 
-        ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
-        Get-Item |
-        Add-ZipArchiveEntry @params
+    $pathsToZip = $Path | ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ }
+
+    if( -not $AsPathString )
+    {
+        $pathsToZip = $pathsToZip | Get-Item
+    }
+
+    if( $NonPipeline )
+    {
+        Add-ZipArchiveEntry -InputObject $pathsToZip @params
+    }
+    else
+    {
+        $pathsToZip | Add-ZipArchiveEntry @params
+    }
 }
 
 Describe 'Add-ZipArchiveEntry' {
@@ -214,6 +235,13 @@ Describe 'Add-ZipArchiveEntry' {
     WhenAddingFiles '*.aspx','*.js'
     ThenArchiveContains 'one.aspx','one.js' -LastModified $lastModified
     ThenArchiveNotContains 'one.cs','one.txt'
+}
+
+Describe 'Add-ZipArchiveEntry.when passing files directly to InputObject parameter' {
+    Init
+    GivenFile 'one.cs', 'two.cs'
+    WhenAddingFiles 'one.cs', 'two.cs' -NonPipeline
+    ThenArchiveContains 'one.cs', 'two.cs'
 }
 
 Describe 'Add-ZipArchiveEntry.when file already exists' {
@@ -246,7 +274,7 @@ Describe 'Add-ZipArchiveEntry.when adding archive root' {
 Describe 'Add-ZipArchiveEntry.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs'
+    WhenAddingFiles 'one.cs', 'two.cs' -AsPathString
     ThenArchiveContains 'one.cs','two.cs'
 }
 
@@ -314,4 +342,32 @@ Describe 'Add-ZipArchiveEntry.when base path has a directory separator at the en
     GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
     WhenAddingFiles 'dir1' -WithBasePath (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1\')
     ThenArchiveContains 'one.cs','two.cs','three\four.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when passed path string with wildcard' {
+    Init
+    GivenFile 'one.cs', 'two.cs'
+    WhenAddingFiles '*.cs', 'one.cs' -AsPathString -ErrorAction SilentlyContinue
+    ThenArchiveContains 'one.cs'
+    ThenArchiveNotContains 'two.cs'
+    ThenError -Matches 'does\ not\ exist\.\ Wildcard\ expressions\ are\ not\ supported\.'
+}
+
+Describe 'Add-ZipArchiveEntry.when character set wildcard matches a filename literally' {
+    Init
+    GivenFile '[one].cs', 'o.cs', 'n.cs', 'e.cs', 'two.cs'
+    WhenAddingFiles '[one].cs', 'two.cs' -AsPathString
+    ThenArchiveContains '[one].cs', 'two.cs'
+    ThenArchiveNotContains 'o.cs', 'n.cs', 'e.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when using Quiet switch' {
+    Init
+    Mock -CommandName 'Write-Progress' -ModuleName 'Zip'
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -Quiet
+
+    It 'should not write any progress messages' {
+        Assert-MockCalled -CommandName 'Write-Progress' -ModuleName 'Zip' -Times 0
+    }
 }
