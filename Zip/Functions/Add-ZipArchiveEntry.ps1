@@ -159,6 +159,8 @@ function Add-ZipArchiveEntry
                 $baseEntryName = Join-Path -Path $EntryParentPath -ChildPath $baseEntryName
             }
 
+            $baseEntryName = $baseEntryName -replace '\\','/'
+
             # Add the file.
             if( (Test-Path -LiteralPath $filePath -PathType Leaf) )
             {
@@ -175,6 +177,7 @@ function Add-ZipArchiveEntry
                 {
                     $fileEntryName = Join-Path -Path $baseEntryName -ChildPath $fileEntryName
                 }
+                $fileEntryName = $fileEntryName -replace '\\','/'
                 $entries[$fileEntryName] = $filePath
             }
         }
