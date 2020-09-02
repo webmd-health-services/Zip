@@ -7,6 +7,10 @@ Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath '..\PSModules\Glob
 
 $archive = $null
 
+# https://docs.microsoft.com/en-us/dotnet/api/system.io.compression.ziparchiveentry.lastwritetime#exceptions
+$ZipEntryLastWriteTime_MinimumValue = [datetime]'1/1/1980 00:00:00'
+$ZipEntryLastWriteTime_MaximumValue = [datetime]'12/31/2107 23:59:59'
+
 function GivenFile
 {
     param(
@@ -397,5 +401,23 @@ Describe 'Add-ZipArchiveEntry.when using Quiet switch' {
         GivenFile 'one.cs'
         WhenAddingFiles 'one.cs' -Quiet
         Assert-MockCalled -CommandName 'Write-Progress' -ModuleName 'Zip' -Times 0
+    }
+}
+
+Describe 'Add-ZipArchiveEntry.when file LastWriteTime is less than the minimum supported range' {
+    It 'should add files to the archive with mininum last write time value' {
+        Init
+        GivenFile 'file.txt' -LastModified $ZipEntryLastWriteTime_MinimumValue.AddSeconds(-1)
+        WhenAddingFiles 'file.txt'
+        ThenArchiveContains 'file.txt' -LastModified $ZipEntryLastWriteTime_MinimumValue
+    }
+}
+
+Describe 'Add-ZipArchiveEntry.when file LastWriteTime is greater than the maximum supported range' {
+    It 'should add files to the archive with maximum last write time value' {
+        Init
+        GivenFile 'file.txt' -LastModified $ZipEntryLastWriteTime_MaximumValue.AddSeconds(1)
+        WhenAddingFiles 'file.txt'
+        ThenArchiveContains 'file.txt' -LastModified $ZipEntryLastWriteTime_MaximumValue
     }
 }
