@@ -13,6 +13,12 @@ Build:
     Path: Zip
 
 Publish:
+- AppVeyorWaitForBuildJobs:
+    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
+    IfExists: env:APPVEYOR_BEARER_TOKEN
+    OnlyOnPlatform: Windows
+    ApiKeyID: AppVeyor
+
 - PublishPowerShellModule:
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     RepositoryName: PSGallery

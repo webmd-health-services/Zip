@@ -152,11 +152,21 @@ Describe 'New-ZipArchive.when passing path with valid special characters in path
     }
 }
 
-Describe 'New-ZipArchive.when passing path with invalid special characters in path' {
-    It 'should fail' {
-        Init
-        WhenCreatingArchive 'somefile*.zip' -ErrorAction SilentlyContinue
-        ThenNothingReturned
-        ThenError -Matches 'Illegal characters in path'
+# Only Windows really has filename character limitations
+if ($IsWindows)
+{
+    Describe 'New-ZipArchive.when passing path with invalid special characters in path' {
+        $expectedError = 'Illegal characters in path'
+        if ($PSVersionTable.PSVersion.Major -ge 6)
+        {
+            $expectedError = 'The filename, directory name, or volume label syntax is incorrect.'
+        }
+
+        It 'should fail' {
+            Init
+            WhenCreatingArchive 'somefile*.zip' -ErrorAction SilentlyContinue
+            ThenNothingReturned
+            ThenError -Matches $expectedError
+        }
     }
 }

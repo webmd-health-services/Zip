@@ -110,6 +110,10 @@ function Add-ZipArchiveEntry
         }
 
         $entries = @{}
+
+        # https://docs.microsoft.com/en-us/dotnet/api/system.io.compression.ziparchiveentry.lastwritetime#exceptions
+        $ZipEntryLastWriteTime_MinimumValue = [datetime]'1/1/1980 00:00:00'
+        $ZipEntryLastWriteTime_MaximumValue = [datetime]'12/31/2107 23:59:59'
     }
 
     process
@@ -242,7 +246,21 @@ function Add-ZipArchiveEntry
                 }
 
                 $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
-                $entry.LastWriteTime = (Get-Item -LiteralPath $filePath).LastWriteTime
+                $fileLastWriteTime = (Get-Item -LiteralPath $filePath).LastWriteTime
+
+                if( $fileLastWriteTime -lt $ZipEntryLastWriteTime_MinimumValue )
+                {
+                    $entry.LastWriteTime = $ZipEntryLastWriteTime_MinimumValue
+                }
+                elseif( $fileLastWriteTime -gt $ZipEntryLastWriteTime_MaximumValue )
+                {
+                    $entry.LastWriteTime = $ZipEntryLastWriteTime_MaximumValue
+                }
+                else
+                {
+                    $entry.LastWriteTime = $fileLastWriteTime
+                }
+
                 $stream = $entry.Open()
                 try
                 {

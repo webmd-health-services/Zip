@@ -12,7 +12,7 @@
     RootModule = 'Zip.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.3.1'
+    ModuleVersion = '0.3.2'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -113,7 +113,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = '
-* Fixed: creates archives that can''t be extracted on non-Windows platforms.
+* Fixed: Add-ZipArchiveEntry fails to add a file with a last write timestamp before 1980 January 1 0:00:00 (midnight) or later than 2107 December 31 23:59:59.
 '
 
         } # End of PSData hashtable
