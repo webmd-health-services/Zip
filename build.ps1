@@ -158,6 +158,7 @@ $context = New-WhiskeyContext -Environment 'Dev' -ConfigurationPath $configPath
 $apiKeys = @{
                 'PowerShellGallery' = 'POWERSHELL_GALLERY_API_KEY'
                 'github.com' = 'GITHUB_ACCESS_TOKEN'
+                'AppVeyor' = 'APPVEYOR_BEARER_TOKEN'
             }
 
 $apiKeys.Keys |
