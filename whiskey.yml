@@ -1,13 +1,23 @@
 PublishOn:
  - master
- 
+
 Build:
 - Version:
     Path: Zip\Zip.psd1
 - GetPowerShellModule:
     Name: Glob
-- Pester4:
-    Path: Tests\*.Tests.ps1
+- Pester:
+    Configuration:
+        Run:
+            Path: Tests\*.Tests.ps1
+            Exit: true
+            Throw: true
+        TestResult:
+            Enabled: true
+            OutputPath: .output\pester.xml
+            TestSuiteName: Zip
+        Output:
+            Verbosity: Detailed
 - Zip:
     ArchivePath: .output\Zip.zip
     Path: Zip
