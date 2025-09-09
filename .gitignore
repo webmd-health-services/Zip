@@ -1,3 +1,7 @@
 /.output/**
 /PSModules/**
 /.vscode/**
+/Zip/LICENSE.txt
+/Zip/NOTICE.txt
+/Zip/CHANGELOG.md
+/Zip/README.md
