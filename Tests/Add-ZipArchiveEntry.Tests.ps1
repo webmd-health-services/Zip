@@ -11,6 +11,7 @@ BeforeAll {
     $script:testDirPath = $null
     $script:testNum = 0
     $script:archive = $null
+    $script:archivePath = $null
 
     # https://docs.microsoft.com/en-us/dotnet/api/system.io.compression.ziparchiveentry.lastwritetime#exceptions
     $script:ZipEntryLastWriteTime_MinimumValue = [datetime]'1/1/1980 00:00:00'
@@ -19,13 +20,11 @@ BeforeAll {
     function GivenFile
     {
         param(
-            [string[]]
-            $Path,
+            [String[]] $Path,
 
             $Content,
 
-            [datetime]
-            $LastModified
+            [DateTime] $LastModified
         )
 
         foreach( $pathItem in $Path )
@@ -155,17 +154,13 @@ BeforeAll {
     {
         [CmdletBinding()]
         param(
-            [string[]]
-            $Path,
+            [String[]] $Path,
 
-            [switch]
-            $AsPathString,
+            [switch] $AsPathString,
 
-            [switch]
-            $NonPipeline,
+            [switch] $NonPipeline,
 
-            [Switch]
-            $Force,
+            [switch] $Force,
 
             $AtArchiveRoot,
 
@@ -173,39 +168,37 @@ BeforeAll {
 
             $WithName,
 
-            [switch]
-            $Quiet
+            [switch] $Quiet,
+
+            [hashtable] $WithArgs
         )
 
-        $archivePath = Join-Path -Path $script:testDirPath -ChildPath 'zip.zip'
-        if( -not (Test-Path -Path $archivePath -PathType Leaf) )
+        if (-not $WithArgs)
         {
-            $script:archive = New-ZipArchive -Path $archivePath
+            $WithArgs = @{}
         }
 
-        $params = @{
-            ZipArchivePath = $script:archive.FullName
-            Quiet = $Quiet
-        }
+        $WithArgs['ZipArchivePath'] = $script:archive.FullName
+        $WithArgs['Quiet'] = $Quiet
 
         if( $AtArchiveRoot )
         {
-            $params['EntryParentPath'] = $AtArchiveRoot
+            $WithArgs['EntryParentPath'] = $AtArchiveRoot
         }
 
         if( $Force )
         {
-            $params['Force'] = $true
+            $WithArgs['Force'] = $true
         }
 
         if( $WithBasePath )
         {
-            $params['BasePath'] = $WithBasePath
+            $WithArgs['BasePath'] = $WithBasePath
         }
 
         if( $WithName )
         {
-            $params['EntryName'] = $WithName
+            $WithArgs['EntryName'] = $WithName
         }
 
         $Global:Error.Clear()
@@ -219,11 +212,11 @@ BeforeAll {
 
         if( $NonPipeline )
         {
-            Add-ZipArchiveEntry -InputObject $pathsToZip @params
+            Add-ZipArchiveEntry -InputObject $pathsToZip @WithArgs
         }
         else
         {
-            $pathsToZip | Add-ZipArchiveEntry @params
+            $pathsToZip | Add-ZipArchiveEntry @WithArgs
         }
     }
 }
@@ -233,6 +226,13 @@ Describe 'Add-ZipArchiveEntry' {
         $script:archive = $null
         $script:testDirPath = Join-Path -Path $TestDrive -ChildPath ($script:testNum++)
         New-Item -Path $script:testDirPath -ItemType Directory
+
+        $script:archivePath = Join-Path -Path $script:testDirPath -ChildPath 'zip.zip'
+        if( -not (Test-Path -Path $script:archivePath -PathType Leaf) )
+        {
+            $script:archive = New-ZipArchive -Path $script:archivePath
+        }
+
     }
 
     It 'adds files to an archive' {
@@ -368,5 +368,26 @@ Describe 'Add-ZipArchiveEntry' {
         GivenFile 'file.txt' -LastModified $script:ZipEntryLastWriteTime_MaximumValue.AddSeconds(1)
         WhenAddingFiles 'file.txt'
         ThenArchiveContains 'file.txt' -LastModified $script:ZipEntryLastWriteTime_MaximumValue
+    }
+
+    It 'supports WhatIf' {
+        GivenFile '24a.txt', '24b.txt', '24c.txt' -Content 'first!'
+        WhenAddingFiles '24a.txt'
+        GivenFile '24a.txt' -Content 'second :('
+
+        $expectedHash = Get-FileHash -path $script:archivePath
+        WhenAddingFiles '24a.txt', '24b.txt', '24c.txt' -WithArgs @{ WhatIf = $true; Force = $true; }
+        # .zip file should be unchanged
+        $expectedHash.Hash | Should -Be (Get-FileHash -Path $script:archivePath).Hash
+        $Global:Error | Should -BeNullOrEmpty
+    }
+
+    It 'supports WhatIf when archive doesn''t exist' {
+        Remove-Item -Path $script:archivePath
+        $script:archivePath | Should -Not -Exist
+        GivenFile '25a.txt'
+        WhenAddingFiles '25a.txt' -WithArgs @{ WhatIf = $true; }
+        $script:archivePath | Should -Not -Exist
+        $Global:Error | Should -BeNullOrEmpty
     }
 }

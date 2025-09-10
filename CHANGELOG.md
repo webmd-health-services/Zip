@@ -1,6 +1,10 @@
 
 # Zip PowerShell Module Changelog
 
+## 1.0.0
+
+Added WhatIf/ShouldProcess support to `New-ZipArchive` and `Add-ZipArchiveEntry`.
+
 ## 0.3.2
 
 > Released 3 Sep 2020
