@@ -1,49 +1,65 @@
-PublishOn:
- - master
- 
+
 Build:
+- PowerShell: prism install | Format-Table -Auto
+  .ExceptDuring: Clean
+
 - Version:
     Path: Zip\Zip.psd1
-- GetPowerShellModule:
-    Name: Glob
-- Pester4:
-    Path: Tests\*.Tests.ps1
-- Zip:
-    ArchivePath: .output\Zip.zip
-    Path: Zip
+    IncrementPrereleaseVersion: true
+    Prerelease:
+    - main: ""
+    - "*": rc1
 
-Publish:
-- AppVeyorWaitForBuildJobs:
-    OnlyOnPlatform: Windows
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    IfExists: env:APPVEYOR_BEARER_TOKEN
-    ApiKeyID: AppVeyor
+# Update the AppVeyor build/version number.
+- Exec: appveyor UpdateBuild -Version "$(WHISKEY_SEMVER2)+$(WHISKEY_BUILD_NUMBER)"
+  .OnlyBy: BuildServer
+
+# Dot-sourcing files is expensive. Move all functions into .psm1 file to improve import speed. Do this before testing
+# to ensure the module still works.
+- MergeFile:
+    .OnlyBy: BuildServer
+    # Builds run twice on some serves. Only run this step if the module hasn't been merged yet.
+    .IfExists: Zip\Functions\*.ps1
+    Path:
+    - Zip\Functions\*.ps1
+    DestinationPath: Zip\Zip.psm1
+    DeleteSourceFiles: true
+    TextSeparator: "$(NewLine)$(NewLine)"
+
+- CopyFile:
+    Path:
+    - CHANGELOG.md
+    - README.md
+    - LICENSE.txt
+    - NOTICE.txt
+    DestinationDirectory: Zip
+
+- Zip:
+    ArchivePath: .output\Zip-$(WHISKEY_SEMVER2).zip
+    Path:
+    - Zip
+    Exclude:
+    - "*.pdb"
+    - "*.orig"
+
+- Exec: appveyor PushArtifact '.output/Zip-$(WHISKEY_SEMVER2).zip' -DeploymentName 'GitHub'
+  .OnlyBy: BuildServer
+
+- Pester:
+    Configuration:
+        Run:
+            Path: Tests\*.Tests.ps1
+            Exit: true
+            Throw: true
+        TestResult:
+            Enabled: true
+            OutputPath: .output\pester.xml
+            TestSuiteName: Zip
+        Output:
+            Verbosity: Detailed
 
 - PublishPowerShellModule:
-    OnlyOnPlatform: Windows
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    RepositoryName: PSGallery
-    RepositoryUri: https://powershellgallery.com/api/v2/
     Path: Zip
-    ApiKeyID: PowerShellGallery
 
-- SetVariableFromPowerShellDataFile:
-    Path: Zip\Zip.psd1
-    Variables:
-        PrivateData:
-            PSData:
-                ReleaseNotes: RELEASE_NOTES
-
-- GitHubRelease:
-    OnlyOnPlatform: Windows
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    RepositoryName: webmd-health-services/Zip
-    ApiKeyID: github.com
-    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Commitish: $(WHISKEY_SCM_COMMIT_ID)
-    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Description: $(RELEASE_NOTES)
-    Assets:
-    - Path: .output\Zip.zip
-      ContentType: application/zip
-      Name: Zip-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip
+- Exec: appveyor PushArtifact '.output/Zip.$(WHISKEY_SEMVER2_NO_BUILD_METADATA).nupkg' -DeploymentName 'PowerShellGallery'
+  .OnlyBy: BuildServer
